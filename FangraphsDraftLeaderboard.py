@@ -85,24 +85,12 @@ hitter_pos.head()
 pitchers[['P','Pos_string']] = [1,'P']
 #Here we concatenate the hitter (with pos-eligibility) and pitchers
 leaderboard = pd.concat([hitter_pos, pitchers])
-#The final draft leaderboard will have Name, Position, pitching WAR, hitting WAR, PA, IP, playerid, AND some calculated values
+#The final draft leaderboard will have Name, Position, pitching WAR, hitting WAR, DHWAR, PA, IP, playerid, AND some calculated values
     #We'll leave the dummy variable versions in case we want that later.
 #leaderboard_final = leaderboard[['Name','Pos_string','pWAR','hWAR','P','C','1B','2B','SS','3B','OF','DH','playerid']]
 leaderboard_final = leaderboard[['Name','Pos_string','pWAR','hWAR', 'DHWAR', 'PA','IP','playerid']]
-leaderboard_final
-#leaderboard_final = leaderboard_final.fillna(0)
-# leaderboard_final = leaderboard_final.groupby(['playerid'],as_index=False).agg({'Name' : 'first',
-                                                                               # 'Pos_string': 'first',
-                                                                               # 'pWAR' : 'sum',
-                                                                               # 'hWAR' : 'sum',
-                                                                               # 'P' : 'sum',
-                                                                               # 'C' : 'sum',
-                                                                               # '1B' : 'sum',
-                                                                               # '2B' : 'sum',
-                                                                               # 'SS' : 'sum',
-                                                                               # '3B' : 'sum',
-                                                                               # 'OF' : 'sum',
-                                                                               # 'DH' : 'sum'})
+#leaderboard_final
+
 #This is essentially the Ohtani merge:
 leaderboard_final = leaderboard_final.groupby(['playerid'],as_index=False).agg({'Name' : 'first',
                                                                                'Pos_string': 'first',
@@ -116,6 +104,7 @@ leaderboard_final
 leaderboard_final['WAR'] = leaderboard_final['hWAR'].fillna(0) + leaderboard_final['pWAR'].fillna(0)
 #Because of the league scoring, it's important for everyone to see prorated WAR in the draft. 
     #Arbitrarily choosing 200IP and 700PA
+    
 leaderboard_final['pWAR200IP'] = round(leaderboard_final['pWAR']/leaderboard_final['IP']*200,1)
 leaderboard_final['hWAR700PA'] = round(leaderboard_final['hWAR']/leaderboard_final['PA']*700,1)
 leaderboard_final['DHWAR700PA'] = round(leaderboard_final['DHWAR']/leaderboard_final['PA']*700,1)
@@ -128,11 +117,13 @@ leaderboard_final = leaderboard_final.rename(columns={'Pos_string' : 'Pos'})
 #The index is arbitrary for a table that is going to be sorted. Let's just make it the playerid
 leaderboard_final = leaderboard_final.set_index('playerid')
 
+#This section is if we want to make changes to the leaderboard post draft and want to keep 
 ask = input('Do you need to merge with owners? y/n: ')
 if ask.lower() == 'y':
     owners = pd.read_csv('DraftAndForget2022 - Sheet1.csv')
     owners = owners[['playerid', 'Owner']]
     leaderboard_final = pd.merge(leaderboard_final, owners, on='playerid', how='left')[['Name','Pos','WAR', 'Owner', 'PA','IP','hWAR','pWAR', 'DHWAR','hWAR700PA','pWAR200IP', 'DHWAR700PA', 'playerid']].sort_values(by='WAR',ascending=False,ignore_index=True).set_index('playerid')
 
-#Let's send this to a csv:
+#Let's send this to a csv.
+#We'll upload it to a google doc so that everyone can choose their players there.
 leaderboard_final.to_csv('DraftLeaderboard2022.csv', sep=',')
