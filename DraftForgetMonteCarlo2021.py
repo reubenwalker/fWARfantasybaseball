@@ -5,11 +5,14 @@ from operator import itemgetter
 from csv import reader
 
 #This iteration of code split the pitchers and hitters
-    #That means we can get rid of the DHWAR for pitchers
+    #That means we could get rid of the DHWAR for pitchers
 #Jesse had too many PAs at catcher??
 #Temporarily solved by declaring PAavailDict as a global variable in function. Less than ideal.
 #Need to print out underperforming players as well
 #Whole number innings from FG for some reason.
+
+#To do:
+    #Take team names automatically from spreadsheet rather than hard-coding them.
 
 #How many total games have been played?
 user_games = int(input("How many games have been played so far? "))
@@ -134,7 +137,7 @@ def optimizeDH(hitters,PAavailDict):
 
     return hittersTemp
 
-def monteCarlo(hitters,PAavailDict,probWeight):
+def monteCarlo(hitters,PAavailDict,weightedProb):
     #DECLARE VARIABLES
     #INITIALIZE ARRAYS AND VALUES
     
@@ -287,397 +290,400 @@ def calcVal(hitters):
     #print('hVal: ' + str(hVal))
     return hVal
 
+
 #Outline
 #DECLARE VARIABLES
 #INITIALIZE ARRAYS AND VALUES
 #RUN THE CALCULATION
 #STORE THE RESULTS
 #DISPLAY THE RESULTS GRAPHICALLY
-
-#Pseudocode for firstGuess
-#Write before you code.
-#What do you need?
+def main():
 #DECLARE VARIABLES
-#You need a list that stores all drafted players
+    #You need a list that stores all drafted players
 
-teamNames = ['Alden','Jesse','Graham','Nick','Sid','Benji','Reuben']#,'', Ruel]
-hitterVal = []
-pitcherVal = []
-teamVal = []
+    #Here the team names are hard-coded in. 
+    #Should be taken automatically from the spreadsheet.
+    teamNames = ['Alden','Jesse','Graham','Nick','Sid','Benji','Reuben']#,'', Ruel]
+    hitterVal = []
+    pitcherVal = []
+    teamVal = []
 
-  
-playersList = []
-#Then you need a list where you will store all drafted players
-#You will eventually run your firstGuess on only one of the teams in this list.
-playerBank = []
-#Were not sure yet how we're going to do the positions,
-#But let's try a position bank first:
-posBank = []
-#You are operating in a world in which you aren't able to perform linear algebra operations
-#Is that going to come back to bite you?
-#You could certainly store the string information in a list
-#and then store the float information in an array with the playerid
-#For now, let's keep going.
-#You need an array or dictionary for the PA and inning goals
-PAavailDict = {}
-#Anything else?
-#Since the calculation for pitchers is so easy, you might as well split pitchers and hitters
-pitchersList = []
-masterPitchers = []
-hittersList = []
-masterHitters = []
+      
+    playersList = []
+    #Then you need a list where you will store all drafted players
+    #You will eventually run your firstGuess on only one of the teams in this list.
+    playerBank = []
+    #Were not sure yet how we're going to do the positions,
+    #But let's try a position bank first:
+    posBank = []
+    #You are operating in a world in which you aren't able to perform linear algebra operations
+    #Is that going to come back to bite you?
+    #You could certainly store the string information in a list
+    #and then store the float information in an array with the playerid
+    #For now, let's keep going.
+    #You need an array or dictionary for the PA and inning goals
+    PAavailDict = {}
+    #Anything else?
+    #Since the calculation for pitchers is so easy, you might as well split pitchers and hitters
+    pitchersList = []
+    masterPitchers = []
+    hittersList = []
+    masterHitters = []
 
 #INITIALIZE ARRAYS AND VALUES
-# read csv file as a list of lists
-#the only reason to split string and float data would be for speed.
-#In that case, you would use tuple.
-with open('FinalRankingsHitters.csv', 'r') as read_obj:
-    # pass the file object to reader() to get the reader object
-    #This is not generalized for any CSV, obviously.
-    #Right now the column headers are:
-    #In order:playerID,Name,Pos,PA,WAR,proratedProj,DHWAR, OWNER
-    #Strings: playerID,Name,Pos
-    #Float: PAorIP,projWAR,proratedProj,DHWAR
-    csv_reader = reader(read_obj)
-    # Pass reader object to list() to get a list of lists
-    masterHitters = list(csv_reader)
-    #print(list_of_rows)
-#Pop headers
-#masterHittersHeaders = masterHitters.pop(0)
-#Convert numerical data to float
-#Remove players from all but chosen team
-#for i in range(len(masterHitters)):
-#    if (masterHitters[i][7] != "Reuben"):
-#        #print(masterHitters[i][7])
-#        masterHitters.pop(i)
+    # read csv file as a list of lists
+    #the only reason to split string and float data would be for speed.
+    #In that case, you would use tuple.
+    with open('FinalRankingsHitters.csv', 'r') as read_obj:
+        # pass the file object to reader() to get the reader object
+        #This is not generalized for any CSV, obviously.
+        #Right now the column headers are:
+        #In order:playerID,Name,Pos,PA,WAR,proratedProj,DHWAR, OWNER
+        #Strings: playerID,Name,Pos
+        #Float: PAorIP,projWAR,proratedProj,DHWAR
+        csv_reader = reader(read_obj)
+        # Pass reader object to list() to get a list of lists
+        masterHitters = list(csv_reader)
+        #print(list_of_rows)
+    #Pop headers
+    #masterHittersHeaders = masterHitters.pop(0)
+    #Convert numerical data to float
+    #Remove players from all but chosen team
+    #for i in range(len(masterHitters)):
+    #    if (masterHitters[i][7] != "Reuben"):
+    #        #print(masterHitters[i][7])
+    #        masterHitters.pop(i)
 
-for i in range(len(masterHitters)):
-    for j in range(3,7):
-        masterHitters[i][j] = float(masterHitters[i][j])
+    for i in range(len(masterHitters)):
+        for j in range(3,7):
+            masterHitters[i][j] = float(masterHitters[i][j])
 
-with open('FinalRankingsPitchers.csv', 'r') as read_obj:
-    # pass the file object to reader() to get the reader object
-    #This is not generalized for any CSV, obviously.
-    #Right now the column headers are:
-    #In order:playerID,Name,Pos,PA,WAR,proratedProj,DHWAR (NULL), OWNER
-    #Strings: playerID,Name,Pos
-    #Float: PAorIP,projWAR,proratedProj,DHWAR
-    csv_reader = reader(read_obj)
-    # Pass reader object to list() to get a list of lists
-    masterPitchers = list(csv_reader)
-    #print(list_of_rows)
-#Pop headers
-#masterPitchersHeaders = masterPitchers.pop(0)
-#Convert numerical data to float
-#Remove players from all but chosen team
-#for i in range(len(masterPitchers)):
-#    if (masterPitchers[i][7] != "Reuben"):
-#        #print(masterPitchers[i][7])
-#        masterPitchers.pop(i)
+    with open('FinalRankingsPitchers.csv', 'r') as read_obj:
+        # pass the file object to reader() to get the reader object
+        #This is not generalized for any CSV, obviously.
+        #Right now the column headers are:
+        #In order:playerID,Name,Pos,PA,WAR,proratedProj,DHWAR (NULL), OWNER
+        #Strings: playerID,Name,Pos
+        #Float: PAorIP,projWAR,proratedProj,DHWAR
+        csv_reader = reader(read_obj)
+        # Pass reader object to list() to get a list of lists
+        masterPitchers = list(csv_reader)
+        #print(list_of_rows)
+    #Pop headers
+    #masterPitchersHeaders = masterPitchers.pop(0)
+    #Convert numerical data to float
+    #Remove players from all but chosen team
+    #for i in range(len(masterPitchers)):
+    #    if (masterPitchers[i][7] != "Reuben"):
+    #        #print(masterPitchers[i][7])
+    #        masterPitchers.pop(i)
 
-#Convert DH WAR to float
-#This is extraneous, but I'm too lazy to remove it right now.
-for i in range(len(masterPitchers)):
-    if masterPitchers[i][6] == ' ':
-        masterPitchers[i][6] = 0
-    masterPitchers[i][6] = float(masterPitchers[i][6])
-for i in range(len(masterPitchers)):
-    for j in range(3,6):
-        masterPitchers[i][j] = float(masterPitchers[i][j])
-
-
-#Innings and PA available for different positions
-#P,C,1B,2B,3B,SS,OF,DH
-PAavailDict = {'C':user_PA,'1B':user_PA,'2B':user_PA,'3B':user_PA,'SS':user_PA,'OF':user_PA*3,'DH':user_PA}
-#This is left over from when IP and PA were logged in the same table.
-IPavailDict = {'P':user_IP}
+    #Convert DH WAR to float
+    #This is extraneous, but I'm too lazy to remove it right now.
+    for i in range(len(masterPitchers)):
+        if masterPitchers[i][6] == ' ':
+            masterPitchers[i][6] = 0
+        masterPitchers[i][6] = float(masterPitchers[i][6])
+    for i in range(len(masterPitchers)):
+        for j in range(3,6):
+            masterPitchers[i][j] = float(masterPitchers[i][j])
 
 
-#Positional eligibility. Necessary?
-#7: C
-#8: 1B
-#9: 2B
-#10: SS
-#11: 3B
-#12: OF
-#13: DH
-posArray = []
-#Here we are adding a dictionary of positional eligibility. Eligible: 1, Ineligible: 0
-while masterHitters != []:
-    j = removePickID(masterHitters,masterHitters[0][0])
-    posArray.append(masterHitters[0].copy())
-    posArray[-1].append({'P': 0,'C':0,'1B':0,'2B':0,'3B':0,'SS':0,'OF':0,'DH':1})
-    for i in sorted(j,reverse = True):
-        if(masterHitters[i][2] != 'P'):
-            posArray[-1][8][masterHitters[i][2]] = 1
-        masterHitters.pop(i)
-
-
-for x in range(len(teamNames)):
-    ownerInquiry = teamNames[x]#input("Which owner would you like to know about? ")
-    print('Team: ' + teamNames[x])
-
-    #Re-initialize PAavailDict
     #Innings and PA available for different positions
     #P,C,1B,2B,3B,SS,OF,DH
     PAavailDict = {'C':user_PA,'1B':user_PA,'2B':user_PA,'3B':user_PA,'SS':user_PA,'OF':user_PA*3,'DH':user_PA}
+    #This is left over from when IP and PA were logged in the same table.
     IPavailDict = {'P':user_IP}
-    hittersList = []
-    pitchersList = []
-    #Formerly: Split pitchers and hitters into separate lists.
-    #Now we'll do this with separate CSVs.
-    #We still have a list of players where they are duplicates if they are multi-position eligible.
-    n = 0
-    m = 0
-    for x in range(len(posArray)):
-        #print(posArray[x][7])
-        if posArray[x][7] == ownerInquiry:
-            hittersList.append([])
-            hittersList[n] = posArray[x].copy()
-            n += 1
-    for y in range(len(masterPitchers)):
-        #print(masterPitchers[y][7])
-        if masterPitchers[y][7] == ownerInquiry:
-            pitchersList.append([])
-            pitchersList[m] = masterPitchers[y].copy()
-            m += 1
-                
 
-    
-    
 
-    #RUN CALCULATION
-    #The pitching calculation is fairly straightforward:
-    #We sort the list by prorated WAR.
-    sortedPitchers = sorted(pitchersList, key=itemgetter(5), reverse=True)
+    #Positional eligibility. Necessary?
+    #7: C
+    #8: 1B
+    #9: 2B
+    #10: SS
+    #11: 3B
+    #12: OF
+    #13: DH
+    posArray = []
+    #Here we are adding a dictionary of positional eligibility. Eligible: 1, Ineligible: 0
+    while masterHitters != []:
+        j = removePickID(masterHitters,masterHitters[0][0])
+        posArray.append(masterHitters[0].copy())
+        posArray[-1].append({'P': 0,'C':0,'1B':0,'2B':0,'3B':0,'SS':0,'OF':0,'DH':1})
+        for i in sorted(j,reverse = True):
+            if(masterHitters[i][2] != 'P'):
+                posArray[-1][8][masterHitters[i][2]] = 1
+            masterHitters.pop(i)
 
-    #print('This is how it looks when I order pitchers by WAR/IP first.')
+#INITIALIZING CALCULATION FOR EACH OWNER IN THE LEAGUE
+    for x in range(len(teamNames)):
+        ownerInquiry = teamNames[x]#input("Which owner would you like to know about? ")
+        print('Team: ' + teamNames[x])
 
-    #Then, we just take the WAR off the top
-    #Until the last available pitcher's IP exceed the IP available
-    #Then we prorate their WAR.
+        #Re-initialize PAavailDict
+        #Innings and PA available for different positions
+        #P,C,1B,2B,3B,SS,OF,DH
+        PAavailDict = {'C':user_PA,'1B':user_PA,'2B':user_PA,'3B':user_PA,'SS':user_PA,'OF':user_PA*3,'DH':user_PA}
+        IPavailDict = {'P':user_IP}
+        hittersList = []
+        pitchersList = []
+        #Formerly: Split pitchers and hitters into separate lists.
+        #Now we'll do this with separate CSVs.
+        #This is still a list of players where they are duplicates if they are multi-position eligible.
+        n = 0
+        m = 0
+        for x in range(len(posArray)):
+            #print(posArray[x][7])
+            if posArray[x][7] == ownerInquiry:
+                hittersList.append([])
+                hittersList[n] = posArray[x].copy()
+                n += 1
+        for y in range(len(masterPitchers)):
+            #print(masterPitchers[y][7])
+            if masterPitchers[y][7] == ownerInquiry:
+                pitchersList.append([])
+                pitchersList[m] = masterPitchers[y].copy()
+                m += 1
+                    
 
-    #Initialize a value to store pitcher value. Probably could do this more elegantly.
-    pVal = 0
-    #for i in range(len(playersList)):
-    i = 0
-    #print('Pitchers: ')
-    while IPavailDict['P'] != 0:
-        if sortedPitchers[i][3] > IPavailDict['P']:
-            prorated = IPavailDict['P']/sortedPitchers[i][3]*sortedPitchers[i][5]
-            pVal += prorated
-            print(sortedPitchers[i][1] + ', WAR: ' + str(round(prorated,1)) + ', IP: ' + str(IPavailDict['P']))
-            IPavailDict['P'] = 0
-            break
-        IPavailDict['P'] -= sortedPitchers[i][3]
-        pVal += sortedPitchers[i][4]
-        print(sortedPitchers[i][1] + ', WAR: ' + str(round(sortedPitchers[i][4],1)) + ', IP: ' + str(sortedPitchers[i][3]))
-        i += 1
-    print('Pitcher WAR: ' + str(round(pVal,1)))# + ' WAR, IP remaining: ' + str(IPavailDict['P']))
-
-    print('\n')
-    print('Unused IP:')
-    for x in range(i+1,len(sortedPitchers)):
-        print(sortedPitchers[x][1] + ', WAR: ' + str(round(sortedPitchers[x][4],1)) + ', IP: ' + str(sortedPitchers[x][3]))
-
-    #Ok, here's the hard part. We need a decent first guess for hitters.
-    #For our first guess, we will assign the players proportionally to their available positions
-    #Since all players are DH eligible, we'll start sorting them by prorated DH WAR.
-    sortedHitters = []
-    for i in range(len(hittersList)):
-        #if hittersList[7] == "Reuben":
-        sortedHitters.append(hittersList[i].copy())
-        #Need to convert prorated WAR and DH WAR to WAR/PA and DHWAR/PA
-        if(sortedHitters[i][3] != 0):
-            sortedHitters[i][5] = sortedHitters[i][4]/sortedHitters[i][3]
-            sortedHitters[i][6] = sortedHitters[i][6]/sortedHitters[i][3]
-        else:
-            sortedHitters[i][5] = 0
-            sortedHitters[i][6] = 0
-    sortedHitters = sorted(sortedHitters, key=itemgetter(6), reverse=True)
-
-    #This may not be the best choice, but will serve as a decent first guess.
-    #How do we "assign" the hitters? Two options:
-    #Keep a new bank of chosen players with their assigned PA.
-    #Keep their assigned PA in the playerbank in an additional array.
-    #The best answer is probably both.
-    #The second option seems like it would be most easily manipulated for Monte Carlo
-    #It also was how you just walked through it.
-    #So let's append positional PAs to the players.
-    #This is a dictionary for their accumulated PA at each position.
-    for i in range(len(sortedHitters)):
-        sortedHitters[i].append({'C':0,'1B':0,'2B':0,'3B':0,'SS':0,'OF':0,'DH':0,'Bench':sortedHitters[i][3]})
-
-    #Ugh, I'm really tired of how complicated this is.
-    #Right now, you are pulling the indeces from the list for each instance of the player
-    #This is because they were pulled from the SQL query by position.
-    #You don't have to do it this way
-    #Now we have one instance with a positional array saved as hittersList
-
-    sumPA = sum(PAavailDict.values())
-    m = 0
-    print('\n')
-    print('Hitters: ')
-    resortDH = 'no'
-    #print(str(sortedHitters[0][9]['Bench']))
-    while sumPA > 0:
-        if (PAavailDict['DH'] == 0) & (resortDH == 'no'):
-            resortDH = 'yes'
-            sortedHitters = sorted(sortedHitters, key=itemgetter(5), reverse=True)
-            m = 0
-        #pickID = sortedHitters[m][0]
-        #j = removePickID(hittersList,pickID)
-        removePA = 0
-        noMorePA = 0
-        while (removePA < sortedHitters[m][3]) & (sumPA != 0) & (noMorePA == 0):
-            sumPA = sum(PAavailDict.values())
-            noMorePA = 1
-            for key in PAavailDict:
-                #if sortedHitters[m][1] == 'Yasmani Grandal':
-                #    print(sortedHitters[m][1],', Pos: ',key,', ELIGIBLE? ', 1==sortedHitters[m][8][key])
-                #Put a PA in all non-filled positions
-                if (sortedHitters[m][9]['Bench'] == 0):
-                    break
-                if (PAavailDict[key] > 0) & (sortedHitters[m][8][key] == 1):
-                    #sortedHitters[j[i][8][sortedHitters[j[i]][2]] += 1                        
-                    PAavailDict[key] -= 1
-                    sortedHitters[m][9]['Bench'] -= 1
-                    sortedHitters[m][9][key] += 1
-                    noMorePA = 0
-            if noMorePA == 1:
-                break
-                
-                #sortedHitters[m][8][sortedHitters[j[i]][2]] += 1
-            #if PAavailDict['DH'] > 0:
-            #    removePA += 1
-            #    for i in range(len(j)):
-            #        sortedHitters[j[i]][8]['DH'] += 1
-            #    PAavailDict['DH'] -= 1
-             
-                
         
-        #sortedHitters[m][9]['Bench'] -= removePA
-        m += 1        
+        
+
+#RUN CALCULATION
+        #The pitching calculation is fairly straightforward:
+        #We sort the list by prorated WAR.
+        sortedPitchers = sorted(pitchersList, key=itemgetter(5), reverse=True)
+
+        #print('This is how it looks when I order pitchers by WAR/IP first.')
+
+        #Then, we just take the WAR off the top
+        #Until the last available pitcher's IP exceed the IP available
+        #Then we prorate their WAR.
+
+        #Initialize a value to store pitcher value. Probably could do this more elegantly.
+        pVal = 0
+        #for i in range(len(playersList)):
+        i = 0
+        #print('Pitchers: ')
+        while IPavailDict['P'] != 0:
+            if sortedPitchers[i][3] > IPavailDict['P']:
+                prorated = IPavailDict['P']/sortedPitchers[i][3]*sortedPitchers[i][5]
+                pVal += prorated
+                print(sortedPitchers[i][1] + ', WAR: ' + str(round(prorated,1)) + ', IP: ' + str(IPavailDict['P']))
+                IPavailDict['P'] = 0
+                break
+            IPavailDict['P'] -= sortedPitchers[i][3]
+            pVal += sortedPitchers[i][4]
+            print(sortedPitchers[i][1] + ', WAR: ' + str(round(sortedPitchers[i][4],1)) + ', IP: ' + str(sortedPitchers[i][3]))
+            i += 1
+        print('Pitcher WAR: ' + str(round(pVal,1)))# + ' WAR, IP remaining: ' + str(IPavailDict['P']))
+
+        print('\n')
+        print('Unused IP:')
+        for x in range(i+1,len(sortedPitchers)):
+            print(sortedPitchers[x][1] + ', WAR: ' + str(round(sortedPitchers[x][4],1)) + ', IP: ' + str(sortedPitchers[x][3]))
+
+        #Ok, here's the hard part. We need a decent first guess for hitters.
+        #For our first guess, we will assign the players proportionally to their available positions
+        #Since all players are DH eligible, we'll start sorting them by prorated DH WAR.
+        sortedHitters = []
+        for i in range(len(hittersList)):
+            #if hittersList[7] == "Reuben":
+            sortedHitters.append(hittersList[i].copy())
+            #Need to convert prorated WAR and DH WAR to WAR/PA and DHWAR/PA
+            if(sortedHitters[i][3] != 0):
+                sortedHitters[i][5] = sortedHitters[i][4]/sortedHitters[i][3]
+                sortedHitters[i][6] = sortedHitters[i][6]/sortedHitters[i][3]
+            else:
+                sortedHitters[i][5] = 0
+                sortedHitters[i][6] = 0
+        sortedHitters = sorted(sortedHitters, key=itemgetter(6), reverse=True)
+
+        #This may not be the best choice, but will serve as a decent first guess.
+        #How do we "assign" the hitters? Two options:
+        #Keep a new bank of chosen players with their assigned PA.
+        #Keep their assigned PA in the playerbank in an additional array.
+        #The best answer is probably both.
+        #The second option seems like it would be most easily manipulated for Monte Carlo
+        #It also was how you just walked through it.
+        #So let's append positional PAs to the players.
+        #This is a dictionary for their accumulated PA at each position.
+        for i in range(len(sortedHitters)):
+            sortedHitters[i].append({'C':0,'1B':0,'2B':0,'3B':0,'SS':0,'OF':0,'DH':0,'Bench':sortedHitters[i][3]})
+
+        #Ugh, I'm really tired of how complicated this is.
+        #Right now, you are pulling the indeces from the list for each instance of the player
+        #This is because they were pulled from the SQL query by position.
+        #You don't have to do it this way
+        #Now we have one instance with a positional array saved as hittersList
+
         sumPA = sum(PAavailDict.values())
-        if m == len(sortedHitters):
-            break
-        #print(m,' sumPA: ',sumPA)
-    start_time = time.time()
-    seconds = round(user_time*3600/8)
-    n = 1
-    weightedProb = []
-
-    startVal = calcVal(sortedHitters)
-
-
-    for i in range(len(sortedHitters)):
-        weightedProb.append(sortedHitters[i][5])
-    while True:
-        current_time = time.time()
-        elapsed_time = current_time - start_time
-        #print('Monte Carlo Run #' + str(n))
-        sortedHitters = monteCarlo(sortedHitters, PAavailDict,weightedProb)
-        PAavailDict = calcPA(sortedHitters)
-        n += 1
-        midVal = calcVal(sortedHitters)
-        #print(str(midVal) + ', midVal')
-        if midVal < startVal:
-            print("Lost Value??!")
-            break
-        if elapsed_time > seconds:
-            #print("Finished iterating in: " + str(int(elapsed_time))  + " seconds after " + str(n) + " iterations")
-            break
-
-
-    hVal = 0
-    finVal = calcVal(sortedHitters)
-    print(str(finVal) + ', finVal')
-    for i in range(len(sortedHitters)):
-        if sortedHitters[i][9]['C'] > 0:
-            print(sortedHitters[i][1],', C, PA: ',str(sortedHitters[i][9]['C']),', WAR: ',str(round(sortedHitters[i][5]*sortedHitters[i][9]['C'],1)))
-            hVal += sortedHitters[i][5]*sortedHitters[i][9]['C']
-    for i in range(len(sortedHitters)):
-        if sortedHitters[i][9]['1B'] > 0:
-            print(sortedHitters[i][1],', 1B, PA: ',str(sortedHitters[i][9]['1B']),', WAR: ',str(round(sortedHitters[i][5]*sortedHitters[i][9]['1B'],1)))
-            hVal += sortedHitters[i][5]*sortedHitters[i][9]['1B']
-    for i in range(len(sortedHitters)):
-        if sortedHitters[i][9]['2B'] > 0:
-            print(sortedHitters[i][1],', 2B, PA: ',str(sortedHitters[i][9]['2B']),', WAR: ',str(round(sortedHitters[i][5]*sortedHitters[i][9]['2B'],1)))
-            hVal += sortedHitters[i][5]*sortedHitters[i][9]['2B']
-    for i in range(len(sortedHitters)):
-        if sortedHitters[i][9]['SS'] > 0:
-            print(sortedHitters[i][1],', SS, PA: ',str(sortedHitters[i][9]['SS']),', WAR: ',str(round(sortedHitters[i][5]*sortedHitters[i][9]['SS'],1)))
-            hVal += sortedHitters[i][5]*sortedHitters[i][9]['SS']
-    for i in range(len(sortedHitters)):
-        if sortedHitters[i][9]['3B'] > 0:
-            print(sortedHitters[i][1],', 3B, PA: ',str(sortedHitters[i][9]['3B']),', WAR: ',str(round(sortedHitters[i][5]*sortedHitters[i][9]['3B'],1)))
-            hVal += sortedHitters[i][5]*sortedHitters[i][9]['3B']
-    for i in range(len(sortedHitters)):
-        if sortedHitters[i][9]['OF'] > 0:
-            print(sortedHitters[i][1],', OF, PA: ',str(sortedHitters[i][9]['OF']),', WAR: ',str(round(sortedHitters[i][5]*sortedHitters[i][9]['OF'],1)))
-            hVal += sortedHitters[i][5]*sortedHitters[i][9]['OF']
-    for i in range(len(sortedHitters)):
-        if sortedHitters[i][9]['DH'] > 0:
-            print(sortedHitters[i][1],', DH, PA: ',str(sortedHitters[i][9]['DH']),', WAR: ',str(round(sortedHitters[i][6]*sortedHitters[i][9]['DH'],1)))
-            hVal += sortedHitters[i][6]*sortedHitters[i][9]['DH']
-    print('\n')
-    print('Unused PA:')
-    for i in range(len(sortedHitters)):
-        if sortedHitters[i][9]['Bench'] == sortedHitters[i][3]:
-            print(sortedHitters[i][1],', Bench, PA: ',str(sortedHitters[i][9]['Bench']),', WAR: ',str(round(sortedHitters[i][6]*sortedHitters[i][9]['Bench'],1)))
+        m = 0
+        print('\n')
+        print('Hitters: ')
+        resortDH = 'no'
+        #print(str(sortedHitters[0][9]['Bench']))
+        while sumPA > 0:
+            if (PAavailDict['DH'] == 0) & (resortDH == 'no'):
+                resortDH = 'yes'
+                sortedHitters = sorted(sortedHitters, key=itemgetter(5), reverse=True)
+                m = 0
+            #pickID = sortedHitters[m][0]
+            #j = removePickID(hittersList,pickID)
+            removePA = 0
+            noMorePA = 0
+            while (removePA < sortedHitters[m][3]) & (sumPA != 0) & (noMorePA == 0):
+                sumPA = sum(PAavailDict.values())
+                noMorePA = 1
+                for key in PAavailDict:
+                    #if sortedHitters[m][1] == 'Yasmani Grandal':
+                    #    print(sortedHitters[m][1],', Pos: ',key,', ELIGIBLE? ', 1==sortedHitters[m][8][key])
+                    #Put a PA in all non-filled positions
+                    if (sortedHitters[m][9]['Bench'] == 0):
+                        break
+                    if (PAavailDict[key] > 0) & (sortedHitters[m][8][key] == 1):
+                        #sortedHitters[j[i][8][sortedHitters[j[i]][2]] += 1                        
+                        PAavailDict[key] -= 1
+                        sortedHitters[m][9]['Bench'] -= 1
+                        sortedHitters[m][9][key] += 1
+                        noMorePA = 0
+                if noMorePA == 1:
+                    break
+                    
+                    #sortedHitters[m][8][sortedHitters[j[i]][2]] += 1
+                #if PAavailDict['DH'] > 0:
+                #    removePA += 1
+                #    for i in range(len(j)):
+                #        sortedHitters[j[i]][8]['DH'] += 1
+                #    PAavailDict['DH'] -= 1
+                 
+                    
             
+            #sortedHitters[m][9]['Bench'] -= removePA
+            m += 1        
+            sumPA = sum(PAavailDict.values())
+            if m == len(sortedHitters):
+                break
+            #print(m,' sumPA: ',sumPA)
 
-    print('Hitter WAR: ' + str(round(hVal,1)))
+###Here we have the Monte Carlo Calculation
+#The sortedHitters are returned each time with an improved score
+        start_time = time.time()
+        seconds = round(user_time*3600/8)
+        n = 1
+        weightedProb = []
 
-    hitterVal.append(hVal)
-    pitcherVal.append(pVal)
+        startVal = calcVal(sortedHitters)
 
-    sumWAR = pVal + hVal
+        for i in range(len(sortedHitters)):
+            weightedProb.append(sortedHitters[i][5])
+            
+        while True:
+            current_time = time.time()
+            elapsed_time = current_time - start_time
+            #print('Monte Carlo Run #' + str(n))
+            sortedHitters = monteCarlo(sortedHitters, PAavailDict, weightedProb)
+            PAavailDict = calcPA(sortedHitters)
+            n += 1
+            midVal = calcVal(sortedHitters)
+            #print(str(midVal) + ', midVal')
+            if midVal < startVal:
+                print("Lost Value??!")
+                break
+            if elapsed_time > seconds:
+                #print("Finished iterating in: " + str(int(elapsed_time))  + " seconds after " + str(n) + " iterations")
+                break
 
-    print('Final WAR: ' + str(round(sumWAR,1)))
-    print('\n')
-    teamVal.append(sumWAR)
+#DISPLAY THE (INDIVIDUAL RESULTS GRAPHICALLY
+        hVal = 0
+        #Final calculation of improved score after iterations
+        finVal = calcVal(sortedHitters)
+        print(str(finVal) + ', finVal')
+        for i in range(len(sortedHitters)):
+            if sortedHitters[i][9]['C'] > 0:
+                print(sortedHitters[i][1],', C, PA: ',str(sortedHitters[i][9]['C']),', WAR: ',str(round(sortedHitters[i][5]*sortedHitters[i][9]['C'],1)))
+                hVal += sortedHitters[i][5]*sortedHitters[i][9]['C']
+        for i in range(len(sortedHitters)):
+            if sortedHitters[i][9]['1B'] > 0:
+                print(sortedHitters[i][1],', 1B, PA: ',str(sortedHitters[i][9]['1B']),', WAR: ',str(round(sortedHitters[i][5]*sortedHitters[i][9]['1B'],1)))
+                hVal += sortedHitters[i][5]*sortedHitters[i][9]['1B']
+        for i in range(len(sortedHitters)):
+            if sortedHitters[i][9]['2B'] > 0:
+                print(sortedHitters[i][1],', 2B, PA: ',str(sortedHitters[i][9]['2B']),', WAR: ',str(round(sortedHitters[i][5]*sortedHitters[i][9]['2B'],1)))
+                hVal += sortedHitters[i][5]*sortedHitters[i][9]['2B']
+        for i in range(len(sortedHitters)):
+            if sortedHitters[i][9]['SS'] > 0:
+                print(sortedHitters[i][1],', SS, PA: ',str(sortedHitters[i][9]['SS']),', WAR: ',str(round(sortedHitters[i][5]*sortedHitters[i][9]['SS'],1)))
+                hVal += sortedHitters[i][5]*sortedHitters[i][9]['SS']
+        for i in range(len(sortedHitters)):
+            if sortedHitters[i][9]['3B'] > 0:
+                print(sortedHitters[i][1],', 3B, PA: ',str(sortedHitters[i][9]['3B']),', WAR: ',str(round(sortedHitters[i][5]*sortedHitters[i][9]['3B'],1)))
+                hVal += sortedHitters[i][5]*sortedHitters[i][9]['3B']
+        for i in range(len(sortedHitters)):
+            if sortedHitters[i][9]['OF'] > 0:
+                print(sortedHitters[i][1],', OF, PA: ',str(sortedHitters[i][9]['OF']),', WAR: ',str(round(sortedHitters[i][5]*sortedHitters[i][9]['OF'],1)))
+                hVal += sortedHitters[i][5]*sortedHitters[i][9]['OF']
+        for i in range(len(sortedHitters)):
+            if sortedHitters[i][9]['DH'] > 0:
+                print(sortedHitters[i][1],', DH, PA: ',str(sortedHitters[i][9]['DH']),', WAR: ',str(round(sortedHitters[i][6]*sortedHitters[i][9]['DH'],1)))
+                hVal += sortedHitters[i][6]*sortedHitters[i][9]['DH']
+        print('\n')
+        print('Unused PA:')
+        for i in range(len(sortedHitters)):
+            if sortedHitters[i][9]['Bench'] == sortedHitters[i][3]:
+                print(sortedHitters[i][1],', Bench, PA: ',str(sortedHitters[i][9]['Bench']),', WAR: ',str(round(sortedHitters[i][6]*sortedHitters[i][9]['Bench'],1)))
+                
+
+        print('Hitter WAR: ' + str(round(hVal,1)))
+
+        hitterVal.append(hVal)
+        pitcherVal.append(pVal)
+
+        sumWAR = pVal + hVal
+
+        print('Final WAR: ' + str(round(sumWAR,1)))
+        print('\n')
+        teamVal.append(sumWAR)
+
+#DISPLAY THE RESULTS 
+    #Calculate standings
+    #user_games has stored how many games have been played
+    #Replacement level teams with 29.7% of games https://library.fangraphs.com/misc/war/replacement-level/
+    repl_wins = .297*user_games
+    #wins = round(repl_wins + teamVal[y])
+    #losses = user_games - wins
+
+    standings = []
+    for i in range(len(teamNames)):
+        standings.append([])
+        standings[i].append(teamNames[i])
+        standings[i].append(teamVal[i])
+        standings[i].append(pitcherVal[i])
+        standings[i].append(hitterVal[i])
 
 
-#Calculate standings
-#user_games has stored how many games have been played
-#Replacement level teams with 29.7% of games https://library.fangraphs.com/misc/war/replacement-level/
-repl_wins = .297*user_games
-#wins = round(repl_wins + teamVal[y])
-#losses = user_games - wins
+    standings = sorted(standings, key=itemgetter(1), reverse=True)
 
-standings = []
-for i in range(len(teamNames)):
-	standings.append([])
-	standings[i].append(teamNames[i])
-	standings[i].append(teamVal[i])
-	standings[i].append(pitcherVal[i])
-	standings[i].append(hitterVal[i])
+    totalWAR = 0
+    for y in range(len(standings)):
+        totalWAR += standings[y][1]
+        wins = round(repl_wins + standings[y][1])
+        losses = round(user_games - wins)
+        print(standings[y][0] + ', Record: ' + str(wins) + '-' + str(losses) + ', Pitcher WAR: ' + str(round(standings[y][2],1)) + ', Hitter WAR: ' + str(round(standings[y][3],1)))
 
+    #print('Non-Drafted, Record: ' + str(round(repl_wins + teamVal[-1])) + '-' + str(user_games - round((repl_wins + teamVal[-1]))))
+    #Calculate every other team's win loss record
+    #WIN% is Wins/Games
+    #WIN%(WAR) = (.297*Games + WAR)/Games
+    #If every team had a 0.5 WIN%, total wins available above replacement would be:
+    totWinsAvail = (.5*user_games - repl_wins)*30
+    #The N teams in the league have collected totalWAR
+    #The extra WAR over .500 they have collected is:
+    leftoverWAR = totWinsAvail - totalWAR
+    avgWins = round(repl_wins + leftoverWAR/(30 - 8))
+    avgLoss = user_games - avgWins
+    print('Remaining League Teams, Record: ' + str(avgWins) + '-' + str(avgLoss))
 
-standings = sorted(standings, key=itemgetter(1), reverse=True)
-
-totalWAR = 0
-for y in range(len(standings)):
-    totalWAR += standings[y][1]
-    wins = round(repl_wins + standings[y][1])
-    losses = round(user_games - wins)
-    print(standings[y][0] + ', Record: ' + str(wins) + '-' + str(losses) + ', Pitcher WAR: ' + str(round(standings[y][2],1)) + ', Hitter WAR: ' + str(round(standings[y][3],1)))
-
-#print('Non-Drafted, Record: ' + str(round(repl_wins + teamVal[-1])) + '-' + str(user_games - round((repl_wins + teamVal[-1]))))
-#Calculate every other team's win loss record
-#WIN% is Wins/Games
-#WIN%(WAR) = (.297*Games + WAR)/Games
-#If every team had a 0.5 WIN%, total wins available above replacement would be:
-totWinsAvail = (.5*user_games - repl_wins)*30
-#The N teams in the league have collected totalWAR
-#The extra WAR over .500 they have collected is:
-leftoverWAR = totWinsAvail - totalWAR
-avgWins = round(repl_wins + leftoverWAR/(30 - 8))
-avgLoss = user_games - avgWins
-print('Remaining League Teams, Record: ' + str(avgWins) + '-' + str(avgLoss))
-    #STORE RESULTS
-    #DISPLAY RESULTS GRAPHICALLY
-
-
+if __name__ == "__main__":
+    main()
 
