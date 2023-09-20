@@ -1,4 +1,5 @@
 import copy
+import copy
 import time
 import random
 from operator import itemgetter
@@ -53,7 +54,7 @@ def fillDepth(hitters,PAavailDict):
 
     hittersTemp = sorted(hittersTemp, key=itemgetter(5), reverse=True)
 
-    sumPA = sum(PAavailTemp.values())
+    sumPA = sum(list(PAavailTemp.values()))
     m = 0
     #print('\n')
     #print('Hitters: ')
@@ -69,7 +70,7 @@ def fillDepth(hitters,PAavailDict):
         removePA = 0
         noMorePA = 0
         while (removePA < hittersTemp[m][3]) & (sumPA != 0) & (noMorePA == 0):# & (PAavailTemp['DH'] == 0):
-            sumPA = sum(PAavailTemp.values())
+            sumPA = sum(list(PAavailTemp.values()))
             noMorePA = 1
             for key in PAavailTemp:
                 #if hittersTemp[m][1] == 'Yasmani Grandal':
@@ -102,7 +103,7 @@ def fillDepth(hitters,PAavailDict):
         if m == len(hittersTemp):
             break
         #print(m)
-        sumPA = sum(PAavailTemp.values())
+        sumPA = sum(list(PAavailTemp.values()))
     return hittersTemp
 
 def optimizeDH(hitters,PAavailDict):
@@ -290,6 +291,31 @@ def calcVal(hitters):
     #print('hVal: ' + str(hVal))
     return hVal
 
+def replacementVal(hitters):
+    hittersAR = sortedHitters.copy()
+    mask = sortedHitters['Pos'].str.contains('C')
+    hittersAR.loc[mask,'C_R'] = (sortedHitters['hWAR700PA'] - sortedHitters[(sortedHitters['PA'] == sortedHitters['Bench']) & sortedHitters['Pos'].str.contains('C')]['hWAR700PA'].max())/700*sortedHitters['PA']
+    mask = sortedHitters['Pos'].str.contains('1B')
+    hittersAR.loc[mask,'1B_R'] = (sortedHitters['hWAR700PA'] - sortedHitters[(sortedHitters['PA'] == sortedHitters['Bench']) & sortedHitters['Pos'].str.contains('1B')]['hWAR700PA'].max())/700*sortedHitters['PA']
+    mask = sortedHitters['Pos'].str.contains('2B')
+    hittersAR.loc[mask,'2B_R'] = (sortedHitters['hWAR700PA'] - sortedHitters[(sortedHitters['PA'] == sortedHitters['Bench']) & sortedHitters['Pos'].str.contains('2B')]['hWAR700PA'].max())/700*sortedHitters['PA']
+    mask = sortedHitters['Pos'].str.contains('SS')
+    hittersAR.loc[mask,'SS_R'] = (sortedHitters['hWAR700PA'] - sortedHitters[(sortedHitters['PA'] == sortedHitters['Bench']) & sortedHitters['Pos'].str.contains('SS')]['hWAR700PA'].max())/700*sortedHitters['PA']
+    mask = sortedHitters['Pos'].str.contains('3B')
+    hittersAR.loc[mask,'3B_R'] = (sortedHitters['hWAR700PA'] - sortedHitters[(sortedHitters['PA'] == sortedHitters['Bench']) & sortedHitters['Pos'].str.contains('3B')]['hWAR700PA'].max())/700*sortedHitters['PA']
+    mask = sortedHitters['Pos'].str.contains('OF')
+    hittersAR.loc[mask,'OF_R'] = (sortedHitters['hWAR700PA'] - sortedHitters[(sortedHitters['PA'] == sortedHitters['Bench']) & sortedHitters['Pos'].str.contains('OF')]['hWAR700PA'].max())/700*sortedHitters['PA']
+    mask = sortedHitters['Pos'].str.contains('DH')
+    hittersAR.loc[mask,'DH_R'] = (sortedHitters['DHWAR700PA'] - sortedHitters[(sortedHitters['PA'] == sortedHitters['Bench']) & sortedHitters['Pos'].str.contains('DH')]['DHWAR700PA'].max())/700*sortedHitters['PA']
+    hittersAR['WAR_AR'] = hittersAR.iloc[:,-7:].max(axis=1)
+    #Let's send that above replacement to a csv
+    hittersAR = hittersAR.sort_values('WAR_AR', ascending=False)
+    leaderboardAR = pd.concat([hittersAR[['Name', 'Pos', 'WAR_AR']], pitchersAR])
+    leaderboardAR = leaderboardAR.sort_values('WAR_AR', ascending=False)
+    leaderboardAR = leaderboardAR.groupby('Name').aggregate({'Pos': 'first', 'WAR_AR': 'sum'})
+    leaderboardAR = leaderboardAR.sort_values('WAR_AR', ascending=False)
+    leaderboardAR
+    leaderboardAR.to_csv('LeaderboardAR2022.csv', sep=',')
 
 #Outline
 #DECLARE VARIABLES
@@ -299,11 +325,12 @@ def calcVal(hitters):
 #DISPLAY THE RESULTS GRAPHICALLY
 def main():
 #DECLARE VARIABLES
-    #You need a list that stores all drafted players
 
-    #Here the team names are hard-coded in. 
-    #Should be taken automatically from the spreadsheet.
-    teamNames = ['Alden','Jesse','Graham','Nick','Sid','Benji','Reuben']#,'', Ruel]
+#You need a list that stores all drafted players
+
+#Here the team names are hard-coded in. 
+#Should be taken automatically from the spreadsheet.
+    teamNames = ['Graham','Alden','Jesse','Nick','Sid','Benji','Reuben']#,'', Ruel]
     hitterVal = []
     pitcherVal = []
     teamVal = []
@@ -311,7 +338,7 @@ def main():
       
     playersList = []
     #Then you need a list where you will store all drafted players
-    #You will eventually run your firstGuess on only one of the teams in this list.
+    #You will run your firstGuess on only one of the teams in this list.
     playerBank = []
     #Were not sure yet how we're going to do the positions,
     #But let's try a position bank first:
@@ -330,11 +357,11 @@ def main():
     hittersList = []
     masterHitters = []
 
-#INITIALIZE ARRAYS AND VALUES
+    #INITIALIZE ARRAYS AND VALUES
     # read csv file as a list of lists
     #the only reason to split string and float data would be for speed.
     #In that case, you would use tuple.
-    with open('FinalRankingsHitters.csv', 'r') as read_obj:
+    with open('FinalRankingsHitters.csv', 'r', encoding="utf8") as read_obj:
         # pass the file object to reader() to get the reader object
         #This is not generalized for any CSV, obviously.
         #Right now the column headers are:
@@ -358,7 +385,7 @@ def main():
         for j in range(3,7):
             masterHitters[i][j] = float(masterHitters[i][j])
 
-    with open('FinalRankingsPitchers.csv', 'r') as read_obj:
+    with open('FinalRankingsPitchers.csv', 'r', encoding="utf8") as read_obj:
         # pass the file object to reader() to get the reader object
         #This is not generalized for any CSV, obviously.
         #Right now the column headers are:
@@ -415,7 +442,7 @@ def main():
                 posArray[-1][8][masterHitters[i][2]] = 1
             masterHitters.pop(i)
 
-#INITIALIZING CALCULATION FOR EACH OWNER IN THE LEAGUE
+    #INITIALIZING CALCULATION FOR EACH OWNER IN THE LEAGUE
     for x in range(len(teamNames)):
         ownerInquiry = teamNames[x]#input("Which owner would you like to know about? ")
         print('Team: ' + teamNames[x])
@@ -449,7 +476,7 @@ def main():
         
         
 
-#RUN CALCULATION
+    #RUN CALCULATION
         #The pitching calculation is fairly straightforward:
         #We sort the list by prorated WAR.
         sortedPitchers = sorted(pitchersList, key=itemgetter(5), reverse=True)
@@ -465,17 +492,19 @@ def main():
         #for i in range(len(playersList)):
         i = 0
         #print('Pitchers: ')
-        while IPavailDict['P'] != 0:
+        
+        while ((IPavailDict['P'] != 0) & (i < len(sortedPitchers))):
             if sortedPitchers[i][3] > IPavailDict['P']:
-                prorated = IPavailDict['P']/sortedPitchers[i][3]*sortedPitchers[i][5]
+                prorated = IPavailDict['P']/sortedPitchers[i][3]*sortedPitchers[i][5]/200.0#Prorated WAR is calculated per 200 IP
                 pVal += prorated
-                print(sortedPitchers[i][1] + ', WAR: ' + str(round(prorated,1)) + ', IP: ' + str(IPavailDict['P']))
+                print(sortedPitchers[i][1] + ', WAR: ' + str(round(prorated,1)) + ', IP: ' + str(round(IPavailDict['P'],1)))
                 IPavailDict['P'] = 0
                 break
             IPavailDict['P'] -= sortedPitchers[i][3]
             pVal += sortedPitchers[i][4]
             print(sortedPitchers[i][1] + ', WAR: ' + str(round(sortedPitchers[i][4],1)) + ', IP: ' + str(sortedPitchers[i][3]))
             i += 1
+
         print('Pitcher WAR: ' + str(round(pVal,1)))# + ' WAR, IP remaining: ' + str(IPavailDict['P']))
 
         print('\n')
@@ -485,7 +514,8 @@ def main():
 
         #Ok, here's the hard part. We need a decent first guess for hitters.
         #For our first guess, we will assign the players proportionally to their available positions
-        #Since all players are DH eligible, we'll start sorting them by prorated DH WAR.
+        #Since all players are DH eligible, 
+            #we'll start sorting them by prorated DH WAR.
         sortedHitters = []
         for i in range(len(hittersList)):
             #if hittersList[7] == "Reuben":
@@ -497,6 +527,7 @@ def main():
             else:
                 sortedHitters[i][5] = 0
                 sortedHitters[i][6] = 0
+        #This sorts the hitters by prorated DH WAR
         sortedHitters = sorted(sortedHitters, key=itemgetter(6), reverse=True)
 
         #This may not be the best choice, but will serve as a decent first guess.
@@ -511,33 +542,30 @@ def main():
         for i in range(len(sortedHitters)):
             sortedHitters[i].append({'C':0,'1B':0,'2B':0,'3B':0,'SS':0,'OF':0,'DH':0,'Bench':sortedHitters[i][3]})
 
-        #Ugh, I'm really tired of how complicated this is.
-        #Right now, you are pulling the indeces from the list for each instance of the player
-        #This is because they were pulled from the SQL query by position.
-        #You don't have to do it this way
         #Now we have one instance with a positional array saved as hittersList
 
-        sumPA = sum(PAavailDict.values())
+        sumPA = sum(list(PAavailDict.values()))
         m = 0
         print('\n')
         print('Hitters: ')
         resortDH = 'no'
         #print(str(sortedHitters[0][9]['Bench']))
+        ###This is the initial guess.
+        
         while sumPA > 0:
             if (PAavailDict['DH'] == 0) & (resortDH == 'no'):
+                #Once available DH PAs are equal to zero, 
+                    #we resort by prorated positional WAR
                 resortDH = 'yes'
                 sortedHitters = sorted(sortedHitters, key=itemgetter(5), reverse=True)
                 m = 0
-            #pickID = sortedHitters[m][0]
-            #j = removePickID(hittersList,pickID)
+
             removePA = 0
             noMorePA = 0
             while (removePA < sortedHitters[m][3]) & (sumPA != 0) & (noMorePA == 0):
-                sumPA = sum(PAavailDict.values())
+                sumPA = sum(list(PAavailDict.values()))
                 noMorePA = 1
                 for key in PAavailDict:
-                    #if sortedHitters[m][1] == 'Yasmani Grandal':
-                    #    print(sortedHitters[m][1],', Pos: ',key,', ELIGIBLE? ', 1==sortedHitters[m][8][key])
                     #Put a PA in all non-filled positions
                     if (sortedHitters[m][9]['Bench'] == 0):
                         break
@@ -549,30 +577,20 @@ def main():
                         noMorePA = 0
                 if noMorePA == 1:
                     break
-                    
-                    #sortedHitters[m][8][sortedHitters[j[i]][2]] += 1
-                #if PAavailDict['DH'] > 0:
-                #    removePA += 1
-                #    for i in range(len(j)):
-                #        sortedHitters[j[i]][8]['DH'] += 1
-                #    PAavailDict['DH'] -= 1
-                 
-                    
-            
-            #sortedHitters[m][9]['Bench'] -= removePA
+
             m += 1        
-            sumPA = sum(PAavailDict.values())
+            sumPA = sum(list(PAavailDict.values()))
             if m == len(sortedHitters):
                 break
             #print(m,' sumPA: ',sumPA)
 
-###Here we have the Monte Carlo Calculation
-#The sortedHitters are returned each time with an improved score
+    ###Here we have the Monte Carlo Calculation
+    #The sortedHitters are returned each time with an improved score
         start_time = time.time()
         seconds = round(user_time*3600/8)
         n = 1
         weightedProb = []
-
+        
         startVal = calcVal(sortedHitters)
 
         for i in range(len(sortedHitters)):
@@ -594,7 +612,7 @@ def main():
                 #print("Finished iterating in: " + str(int(elapsed_time))  + " seconds after " + str(n) + " iterations")
                 break
 
-#DISPLAY THE (INDIVIDUAL RESULTS GRAPHICALLY
+    #DISPLAY THE (INDIVIDUAL RESULTS GRAPHICALLY
         hVal = 0
         #Final calculation of improved score after iterations
         finVal = calcVal(sortedHitters)
@@ -645,7 +663,7 @@ def main():
         print('\n')
         teamVal.append(sumWAR)
 
-#DISPLAY THE RESULTS 
+    #DISPLAY THE RESULTS 
     #Calculate standings
     #user_games has stored how many games have been played
     #Replacement level teams with 29.7% of games https://library.fangraphs.com/misc/war/replacement-level/
