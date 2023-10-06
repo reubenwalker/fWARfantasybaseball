@@ -704,7 +704,7 @@ def main():
     avgWins = round(repl_wins + leftoverWAR/(30 - 8))
     avgLoss = user_games - avgWins
     print('Remaining League Teams, Record: ' + str(avgWins) + '-' + str(avgLoss))
-    save_file = open("savedata.json", "w")  
+    save_file = open("standings.json", "w")  
     json_string = json.dump(standings_f, save_file)
     save_file.close()
     
