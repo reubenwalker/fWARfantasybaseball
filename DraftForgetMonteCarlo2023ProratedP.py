@@ -4,6 +4,7 @@ import time
 import random
 from operator import itemgetter
 from csv import reader
+import json
 
 #This iteration of code split the pitchers and hitters
     #That means we could get rid of the DHWAR for pitchers
@@ -672,23 +673,25 @@ def main():
     #losses = user_games - wins
 
     standings = []
+    standings_f = []
     for i in range(len(teamNames)):
         standings.append([])
         standings[i].append(teamNames[i])
         standings[i].append(teamVal[i])
         standings[i].append(pitcherVal[i])
         standings[i].append(hitterVal[i])
+        standings_f.append([])
 
 
     standings = sorted(standings, key=itemgetter(1), reverse=True)
-
+    
     totalWAR = 0
     for y in range(len(standings)):
         totalWAR += standings[y][1]
         wins = round(repl_wins + standings[y][1])
         losses = round(user_games - wins)
         print(standings[y][0] + ', Record: ' + str(wins) + '-' + str(losses) + ', Pitcher WAR: ' + str(round(standings[y][2],1)) + ', Hitter WAR: ' + str(round(standings[y][3],1)))
-
+        standings_f[y] = {'Team':standings[y][0], 'Wins':str(wins), 'Losses':str(losses)}
     #print('Non-Drafted, Record: ' + str(round(repl_wins + teamVal[-1])) + '-' + str(user_games - round((repl_wins + teamVal[-1]))))
     #Calculate every other team's win loss record
     #WIN% is Wins/Games
@@ -701,7 +704,10 @@ def main():
     avgWins = round(repl_wins + leftoverWAR/(30 - 8))
     avgLoss = user_games - avgWins
     print('Remaining League Teams, Record: ' + str(avgWins) + '-' + str(avgLoss))
-
+    save_file = open("savedata.json", "w")  
+    json_string = json.dump(standings_f, save_file)
+    save_file.close()
+    
 if __name__ == "__main__":
     main()
 
